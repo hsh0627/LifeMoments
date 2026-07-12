@@ -32,9 +32,8 @@ export default function PixelText({
 }: PixelTextProps) {
   const fontSize = sizeMap[size];
   const baseStyle: TextStyle = {
-    fontFamily: 'DotGothic16_400Regular',
     fontSize,
-    lineHeight: fontSize * 2,
+    lineHeight: fontSize * 1.4,
   };
 
   if (!outlined) {
