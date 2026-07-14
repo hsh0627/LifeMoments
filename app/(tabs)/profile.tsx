@@ -128,6 +128,20 @@ export default function Profile() {
             <PixelText size="xs" color="#3B2A1A">切換角色</PixelText>
             <PixelText size="xs" color="#9C8570">{role === 'dad' ? '👨 爸拔' : '🤰 媽麻'}</PixelText>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={{ paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#D9C9B0' }}
+            onPress={() =>
+              Alert.alert('切換人生大事', '要回到人生大事選擇畫面嗎？（角色也會重選）', [
+                { text: '取消', style: 'cancel' },
+                {
+                  text: '切換',
+                  onPress: () => usePregnancyStore.getState().archiveActiveAndGoToPicker(),
+                },
+              ])
+            }
+          >
+            <PixelText size="xs" color="#3B2A1A">切換人生大事</PixelText>
+          </TouchableOpacity>
           <TouchableOpacity style={{ paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#D9C9B0' }}>
             <PixelText size="xs" color="#3B2A1A">隱私權政策</PixelText>
           </TouchableOpacity>

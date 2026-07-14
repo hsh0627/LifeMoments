@@ -6,7 +6,7 @@
 
 - **前端**：React Native + Expo（SDK 54）+ expo-router（file-based routing）+ TypeScript
 - **狀態管理**：Zustand（`store/`），`usePregnancyStore` 有用 `persist` middleware 存進 AsyncStorage
-- **後端**：Supabase（目前僅用於 Auth：訪客匿名登入 / email 登入註冊；**尚未建立任何資料表**，App 資料還沒同步到雲端，見「已知技術債」）
+- **後端**：Supabase（Auth：訪客匿名登入 / email 登入註冊；資料表見 `supabase-schema.sql`，已上線並接了雲端同步，見「資料模型」）
 - **樣式**：純 inline style（`StyleSheet`/inline object），**沒有** NativeWind/Tailwind（2026-07-14 已移除）
 - **字型**：DotGothic16（像素風格），部分畫面用系統字型避免 CJK 亂碼
 
@@ -36,13 +36,36 @@ App 進入 tabs 前有三層守門邏輯，都在 `app/(tabs)/_layout.tsx`：
 Supabase session 的本地鏡像，來源是 `app/_layout.tsx` 的 `onAuthStateChange` 監聽（不持久化，App 重開由 `supabase.auth.getSession()` 重新取得，Supabase session 本身已透過 `lib/supabase.ts` 設定 `persistSession: true` 存在 AsyncStorage）。
 
 ### `store/usePregnancyStore.ts`（**已持久化**，key: `lifemoments-pregnancy-store`）
-- `storyline`：目前選的人生大事，型別 `Storyline = 'pregnancy'`（未來擴充新類型時要在這裡加）
-- `role`：`'mom' | 'dad' | null`，只有 `needsRole: true` 的 storyline 才會用到
-- `profile`：懷孕資料（`lmpDate`、`dueDate`）
+
+採「一條使用中 + 背包」的多實例架構：
+
+- **使用中的那一條線**（跟舊版欄位一樣，畫面元件直接讀這些）：`storyline`、`role`、`cloudInstanceId`、`profile`、`currentWeek`、`xp`、`level`、`badges`、`checklist`、`lastCheckInDate`、`streak`、`freezeCards`、`lastFreezeGrantWeek`
+- `instances: LifeMomentInstance[]` — **背包**，存放「之前開始過、目前沒在看」的其他人生大事線完整快照（同樣的欄位組合）
+- `activeInstanceId` — 目前使用中那條線的本機 id，**同時也是它在 Supabase `lifemoment_instances.id` 的值**（前端自己產生 UUID，insert 時直接帶入，見 `lib/cloudSync.ts`，避免 RLS「還沒建立成員關係就讀不到剛新增的列」的問題）
+- 切換動作：
+  - `startNewLifeMoment(storyline)` — 開全新一條線，目前這條（如果有）先存進 `instances[]`，**不會刪除**
+  - `switchToInstance(id)` — 切回背包裡某一條，同樣會先把目前這條存回背包
+  - `archiveActiveAndGoToPicker()` — 把目前這條收進背包，回到 `StorylineSelectScreen`（Profile／TitleScreen 的「切換人生大事」都是呼叫這個，**不是刪除**）
+  - `cancelOnboarding()` — 只用在「選了人生大事、還沒選完角色」就按返回的情境：因為這條線根本沒有真實資料，直接丟棄、不進背包
 - `currentWeek`：懷孕週數，`setProfile` 時計算一次，App 重開時 `onRehydrateStorage` 會用當下日期重算（不會卡住不動）
-- `xp` / `level`：目前是**單一總量**，還沒有做「每條人生大事分開算」（已在對話中決議要分開算，但尚未實作，見技術債）
+- `xp` / `level`：每個 instance（每條人生大事線）各自獨立計算，不會共用（已按之前決議實作）
 - `checklist`：`ChecklistItem[]`，`category: 'checkup' | 'bag'`，`completeChecklistItem(id)` 會同時加 XP、判斷是否解鎖 `checklist_pro` 徽章
 - `justLeveledUp`：升等彈窗用的暫時旗標，**不持久化**（`partialize` 排除）
+
+**目前限制**：只有「懷孕」是真正做出來的人生大事線，所以 `startNewLifeMoment` 實際上只有一種可能的 `storyline` 值可傳。多線背包的架構已經就緒，但**沒有第二條真線可以實際端到端測試**，等之後開放第二條線時要留意這點。
+
+### `lib/cloudSync.ts` — Supabase 雲端同步
+
+- `bootstrapCloudSync(userId)`：進入 tabs、storyline 確定後呼叫一次。查得到雲端 `lifemoment_members` 記錄就把雲端資料拉回覆蓋本機；查不到就用 `activeInstanceId` 當 id 在雲端建一筆新的（instance + membership + push 目前本機資料）
+- `pushToCloud(userId)`：把目前使用中那條線整包 upsert 到 `pregnancy_profiles` / `checklist_items` / `user_progress`
+- `startAutoSync`：訂閱 `usePregnancyStore`，任何變化 debounce 1.5 秒後自動 `pushToCloud`，不用在每個功能點手動呼叫
+- **已知限制**：只有「使用中」的那條線會同步雲端；`instances[]` 背包裡封存的線目前**不會**跨裝置同步（只存在本機 AsyncStorage），換裝置或砍 App 重灌會遺失背包內容（使用中的那條沒問題）。之後如果要補，`switchToInstance`/`archiveActiveAndGoToPicker` 觸發時應該也呼叫一次 push/pull。
+
+### Supabase Schema（`supabase-schema.sql` / `supabase-fix-rls.sql`）
+
+- `lifemoment_instances` / `lifemoment_members` / `pregnancy_profiles` / `checklist_items` / `user_progress`，都有 RLS
+- **注意**：`lifemoment_members` 自己的 SELECT policy 不能寫成查自己表本身的 subquery（會無限遞迴，2026-07-14 修過一次），已改成單純 `user_id = auth.uid()`
+- 尚未實作：邀請碼配對機制（多人共用同一個 instance）。`invite_code` 欄位已經建了，但沒有產生/輸入邀請碼的畫面或程式邏輯
 
 ## 關鍵設計檔案
 
@@ -50,19 +73,17 @@ Supabase session 的本地鏡像，來源是 `app/_layout.tsx` 的 `onAuthStateC
 - `lib/levels.ts` — 等級稱號 + 主題色，依 `role` 分媽媽線／爸爸線兩套稱號
 - `lib/tasks.ts` — 首頁「今日任務」動態產生邏輯：從 `checklist` 依「已過期→即將到來→未來」排序抓出前幾項，依角色套用不同文案框架（爸爸是「提醒／陪同」框架）
 - `lib/checklistStatus.ts` — 週數狀態判斷（overdue/soon/future）+ 樣式，首頁跟清單頁共用
+- `lib/cloudSync.ts` — Supabase 雲端同步（見上方專節）
 - `components/LevelUpModal.tsx` — 監聽 `justLeveledUp`，全域掛在 `(tabs)/_layout.tsx`
+- `components/TitleScreen.tsx` — 每次進 App（session-scoped，不持久化）先看到的標題畫面，「繼續冒險」才進 tabs；也是「切換人生大事」「登出」的入口
+- `components/StorylineSelectScreen.tsx` — 選人生大事，同時顯示背包裡「繼續之前的冒險」清單
 
 ## 已知技術債（依優先度）
 
-1. **完全沒有雲端資料同步**：Supabase 只做 Auth，App 資料（懷孕資料、XP、清單進度）只存在本機 AsyncStorage。換裝置/砍 App 重灌會遺失。已規劃資料表設計（見下方「討論中的未來架構」），尚未動工。
-2. **XP/等級是全域單一值**：已決議未來要「每條人生大事線分開算」，目前 `usePregnancyStore` 還是單一 `xp`/`level`，之後開放第二條人生大事線時要處理遷移。
-3. **無自動化測試**。
-4. `npm install` 曾多次因套件 peer dependency 衝突需要 `--legacy-peer-deps`，2026-07-14 已用 `npx expo install --fix` 對齊過一次，之後升級 SDK 建議重新跑 `npx expo install --check`。
-
-## 討論中的未來架構（尚未實作，僅供銜接）
-
-- **多人共用資料**（例如懷孕線的爸拔媽麻）：規劃用 `lifemoment_instances`（一份人生大事實例，含 `invite_code`）+ `lifemoment_members`（誰參與、什麼角色）的方式，讓「配對」變成可選的，而不是綁死在整個資料模型上。單身用的人生大事線（買房/買車/創業）可以不產生邀請碼。
-- 詳細討論記錄在對話中，尚未落成程式碼或 schema migration。
+1. **背包裡封存的人生大事線沒有雲端同步**：只有使用中那條線會同步 Supabase，見上方 `lib/cloudSync.ts` 限制說明。
+2. **無自動化測試**。
+3. `npm install` 曾多次因套件 peer dependency 衝突需要 `--legacy-peer-deps`，2026-07-14 已用 `npx expo install --fix` 對齊過一次，之後升級 SDK 建議重新跑 `npx expo install --check`。
+4. **多人配對機制未實作**：`invite_code` 欄位已建但沒有對應功能，見上方 Schema 專節。
 
 ---
 
@@ -95,17 +116,19 @@ Supabase session 的本地鏡像，來源是 `app/_layout.tsx` 的 `onAuthStateC
 
 **已完成：**
 - 訪客／email 登入註冊、登出保護（session 消失自動導回登入）
-- 人生大事選擇 → 角色選擇 → 主畫面 三層導覽流程，角色是否需要選可依線設定
+- 標題畫面（TitleScreen）→ 人生大事選擇 → 角色選擇 → 主畫面 導覽流程，角色是否需要選可依線設定
 - 懷孕週數追蹤（日期選擇器 + 直接輸入模式）
 - 產檢／待產包清單，完成給 XP，解鎖徽章
 - 首頁「今日任務」依週數動態從清單抓最急迫的項目
 - RPG 化：XP／等級／稱號（依角色分媽媽線／爸爸線稱號組）／升等動畫彈窗
+- 每日簽到／連續打卡（含補簽卡機制，每週自動補發 1 張）
 - 本機資料持久化（AsyncStorage，App 重開資料不會消失）
+- Supabase 雲端同步（使用中的那條線，見 `lib/cloudSync.ts`）
+- 多人生大事線背包架構：可以開新線、切換、封存都不刪資料（`switchToInstance` / `startNewLifeMoment` / `archiveActiveAndGoToPicker`），每條線 XP/等級各自獨立
 - 技術債清理：套件版本對齊、移除 NativeWind/Tailwind
 
 **下一步（排定順序）：**
-1. 每日簽到／連續打卡獎勵機制
-2. Supabase 資料表設計 + 雲端同步（含多人共用資料的配對機制）
-3. XP／等級改成依人生大事線分開計算
-4. AI 助理、補助資料庫等核心模組實作
-5. 前端體驗打磨（動畫、效能）
+1. 多人共用資料的配對機制（邀請碼加入同一個 instance，`invite_code` 欄位已建但沒接功能）
+2. 背包裡封存的人生大事線也要同步雲端（目前只有使用中的那條會同步）
+3. AI 助理、補助資料庫等核心模組實作
+4. 前端體驗打磨（動畫、效能）

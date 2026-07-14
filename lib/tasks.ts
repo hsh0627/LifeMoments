@@ -1,4 +1,4 @@
-import { ParentRole, ChecklistItem } from '../store/usePregnancyStore';
+import { ParentRole, ChecklistItem, ChecklistCategory } from '../store/usePregnancyStore';
 import { getItemStatus, ItemStatus } from './checklistStatus';
 
 export interface TodayQuest {
@@ -8,6 +8,7 @@ export interface TodayQuest {
   xp: number;
   optional?: boolean; // 額外任務，可交給另一半
   status?: ItemStatus;
+  category: ChecklistCategory;
 }
 
 const STATUS_PRIORITY: Record<Exclude<ItemStatus, null>, number> = {
@@ -43,6 +44,7 @@ export function getTodayQuests(
     title: role === 'dad' ? `提醒／陪同：${item.title}` : item.title,
     xp: item.xp,
     status,
+    category: 'checkup',
   }));
 
   if (bagRemaining) {
@@ -52,6 +54,7 @@ export function getTodayQuests(
       title: role === 'dad' ? '準備待產包' : '更新待產包清單',
       xp: role === 'dad' ? 20 : 15,
       optional: role !== 'dad',
+      category: 'bag',
     });
   }
 

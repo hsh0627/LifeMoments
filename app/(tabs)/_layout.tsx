@@ -1,12 +1,15 @@
 import { Tabs, Redirect } from 'expo-router';
+import { useState, useEffect } from 'react';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LevelUpModal from '../../components/LevelUpModal';
 import RoleSelectScreen from '../../components/RoleSelectScreen';
 import StorylineSelectScreen from '../../components/StorylineSelectScreen';
+import TitleScreen from '../../components/TitleScreen';
 import { usePregnancyStore } from '../../store/usePregnancyStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { LIFEMOMENT_CONFIG } from '../../lib/lifemoments';
+import { bootstrapCloudSync } from '../../lib/cloudSync';
 
 function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focused: boolean }) {
   return (
@@ -31,6 +34,17 @@ export default function TabsLayout() {
   const storyline = usePregnancyStore((s) => s.storyline);
   const role = usePregnancyStore((s) => s.role);
   const session = useAuthStore((s) => s.session);
+  const [entered, setEntered] = useState(false);
+
+  useEffect(() => {
+    if (!storyline) setEntered(false);
+  }, [storyline]);
+
+  useEffect(() => {
+    if (session?.user?.id && storyline) {
+      bootstrapCloudSync(session.user.id);
+    }
+  }, [session?.user?.id, storyline]);
 
   if (!session) {
     return <Redirect href="/(auth)/welcome" />;
@@ -43,6 +57,10 @@ export default function TabsLayout() {
   const needsRole = LIFEMOMENT_CONFIG[storyline].needsRole;
   if (needsRole && !role) {
     return <RoleSelectScreen />;
+  }
+
+  if (!entered) {
+    return <TitleScreen onContinue={() => setEntered(true)} />;
   }
 
   return (

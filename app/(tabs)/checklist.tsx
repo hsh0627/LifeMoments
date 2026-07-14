@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePregnancyStore, ChecklistCategory } from '../../store/usePregnancyStore';
 import { getItemStatus, STATUS_STYLE } from '../../lib/checklistStatus';
@@ -10,7 +11,12 @@ type TabKey = ChecklistCategory;
 export default function Checklist() {
   const { checklist, completeChecklistItem, currentWeek } = usePregnancyStore();
   const insets = useSafeAreaInsets();
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState<TabKey>('checkup');
+
+  useEffect(() => {
+    if (tab === 'checkup' || tab === 'bag') setActiveTab(tab);
+  }, [tab]);
 
   const list = checklist.filter((i) => i.category === activeTab);
   const doneCount = list.filter((i) => i.done).length;

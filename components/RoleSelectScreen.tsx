@@ -6,6 +6,7 @@ import PixelText from './PixelText';
 
 export default function RoleSelectScreen() {
   const setRole = usePregnancyStore((s) => s.setRole);
+  const cancelOnboarding = usePregnancyStore((s) => s.cancelOnboarding);
   const insets = useSafeAreaInsets();
 
   const handleLogout = () => {
@@ -17,6 +18,9 @@ export default function RoleSelectScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F5EDD8', paddingHorizontal: 24, paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24, justifyContent: 'center', gap: 24 }}>
+      <TouchableOpacity style={{ position: 'absolute', top: insets.top + 12, left: 24 }} onPress={cancelOnboarding}>
+        <PixelText size="xs" color="#9C8570">← 返回</PixelText>
+      </TouchableOpacity>
       <TouchableOpacity style={{ position: 'absolute', top: insets.top + 12, right: 24 }} onPress={handleLogout}>
         <PixelText size="xs" color="#9C8570">登出</PixelText>
       </TouchableOpacity>

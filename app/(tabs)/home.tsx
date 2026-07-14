@@ -10,14 +10,32 @@ import XPBar from '../../components/XPBar';
 import BadgeRow from '../../components/BadgeRow';
 import PixelText from '../../components/PixelText';
 
+function todayString(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 export default function Home() {
   const { user } = useAuthStore();
-  const { role, profile, currentWeek, xp, level, badges, checklist } = usePregnancyStore();
+  const { role, profile, currentWeek, xp, level, badges, checklist, streak, freezeCards, lastCheckInDate, checkIn } = usePregnancyStore();
   const displayName = user?.user_metadata?.display_name ?? '冒險者';
   const insets = useSafeAreaInsets();
   const tier = getLevelTier(level, role);
   const aiUnlocked = level >= AI_ASSISTANT_UNLOCK_LEVEL;
   const quests = getTodayQuests(role, checklist, currentWeek);
+  const checkedInToday = lastCheckInDate === todayString();
+
+  const handleCheckIn = () => {
+    const result = checkIn();
+    if (!result) return;
+    if (result.usedFreeze) {
+      Alert.alert('簽到成功！', `使用了 1 張補簽卡，連續 ${result.streak} 天沒有中斷！+${result.xpEarned} XP`);
+    } else if (result.streakReset) {
+      Alert.alert('簽到成功', `斷簽了，重新從第 1 天開始累積。+${result.xpEarned} XP`);
+    } else {
+      Alert.alert('簽到成功！', `連續 ${result.streak} 天！+${result.xpEarned} XP`);
+    }
+  };
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: '#F5EDD8' }} contentContainerStyle={{ paddingBottom: 32 }}>
@@ -26,6 +44,26 @@ export default function Home() {
       <View style={{ paddingHorizontal: 24, paddingTop: insets.top + 16, paddingBottom: 8 }}>
         <PixelText size="xs" color="#9C8570">歡迎回來</PixelText>
         <PixelText size="sm" outlined color="#FFFFFF" style={{ marginTop: 4 }}>{displayName} 👋</PixelText>
+      </View>
+
+      {/* 每日簽到 */}
+      <View style={{ marginHorizontal: 24, backgroundColor: '#FDF6E3', borderRadius: 12, padding: 16, marginBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', elevation: 1 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Text style={{ fontSize: 28 }}>🔥</Text>
+          <View>
+            <PixelText size="xs" color="#3B2A1A">連續 {streak} 天</PixelText>
+            <PixelText size="xs" color="#9C8570" style={{ marginTop: 2 }}>補簽卡 x{freezeCards}</PixelText>
+          </View>
+        </View>
+        <TouchableOpacity
+          style={{ backgroundColor: checkedInToday ? '#D9C9B0' : '#7C5C3E', borderRadius: 4, paddingVertical: 10, paddingHorizontal: 16 }}
+          onPress={handleCheckIn}
+          disabled={checkedInToday}
+        >
+          <PixelText size="xs" outlined={!checkedInToday} color={checkedInToday ? '#7C5C3E' : '#FFFFFF'}>
+            {checkedInToday ? '今日已簽到' : '簽到'}
+          </PixelText>
+        </TouchableOpacity>
       </View>
 
       {/* RPG 角色卡 */}
@@ -62,7 +100,7 @@ export default function Home() {
                 xpReward={q.xp}
                 optional={q.optional}
                 status={q.status}
-                onPress={() => router.push('/(tabs)/checklist')}
+                onPress={() => router.push({ pathname: '/(tabs)/checklist', params: { tab: q.category } })}
               />
             ))
           ) : (

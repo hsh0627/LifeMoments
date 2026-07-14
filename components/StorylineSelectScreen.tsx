@@ -8,6 +8,10 @@ import PixelText from './PixelText';
 
 const AVAILABLE_LINE = { key: 'pregnancy' as const, emoji: '🤰', title: '懷孕', desc: '孕期追蹤、產檢提醒、待產準備' };
 
+const STORYLINE_LABEL: Record<string, { emoji: string; title: string }> = {
+  pregnancy: { emoji: '🤰', title: '懷孕' },
+};
+
 const DEFAULT_LOCKED_LINES = [
   { emoji: '👶', title: '育兒' },
   { emoji: '💍', title: '結婚' },
@@ -22,7 +26,9 @@ const DEFAULT_LOCKED_LINES = [
 const ORDER_STORAGE_KEY = 'lifemoments_locked_lines_order';
 
 export default function StorylineSelectScreen() {
-  const setStoryline = usePregnancyStore((s) => s.setStoryline);
+  const startNewLifeMoment = usePregnancyStore((s) => s.startNewLifeMoment);
+  const switchToInstance = usePregnancyStore((s) => s.switchToInstance);
+  const instances = usePregnancyStore((s) => s.instances);
   const insets = useSafeAreaInsets();
   const [lockedLines, setLockedLines] = useState(DEFAULT_LOCKED_LINES);
   const [editing, setEditing] = useState(false);
@@ -78,10 +84,35 @@ export default function StorylineSelectScreen() {
         </PixelText>
       </View>
 
+      {/* 背包：之前已經開始過、暫時放著的人生大事 */}
+      {instances.length > 0 && (
+        <View style={{ gap: 12 }}>
+          <PixelText size="xs" color="#9C8570">繼續之前的冒險</PixelText>
+          {instances.map((inst) => {
+            const label = STORYLINE_LABEL[inst.storyline] ?? { emoji: '📌', title: inst.storyline };
+            return (
+              <TouchableOpacity
+                key={inst.id}
+                style={{ backgroundColor: '#7C5C3E', borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+                onPress={() => switchToInstance(inst.id)}
+              >
+                <Text style={{ fontSize: 28 }}>{label.emoji}</Text>
+                <View style={{ flex: 1 }}>
+                  <PixelText size="xs" outlined color="#FFFFFF">{label.title}</PixelText>
+                  <PixelText size="xs" color="#D9C9B0" style={{ marginTop: 2 }}>Lv.{inst.level}・{inst.xp} XP</PixelText>
+                </View>
+                <PixelText size="xs" color="#FDF6E3">繼續 →</PixelText>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+
       {/* 已開放人生大事 */}
+      <PixelText size="xs" color="#9C8570">開始新的冒險</PixelText>
       <TouchableOpacity
         style={{ backgroundColor: '#C4885A', borderRadius: 16, padding: 24, alignItems: 'center', gap: 8 }}
-        onPress={() => setStoryline(AVAILABLE_LINE.key)}
+        onPress={() => startNewLifeMoment(AVAILABLE_LINE.key)}
       >
         <Text style={{ fontSize: 44 }}>{AVAILABLE_LINE.emoji}</Text>
         <PixelText size="sm" outlined color="#FFFFFF">{AVAILABLE_LINE.title}</PixelText>
