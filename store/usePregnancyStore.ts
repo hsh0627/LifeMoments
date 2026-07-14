@@ -12,11 +12,22 @@ interface PregnancyProfile {
 export type ParentRole = 'mom' | 'dad';
 export type Storyline = 'pregnancy';
 
-export type ChecklistCategory = 'checkup' | 'bag';
+export type ChecklistCategory =
+  | 'checkup'   // 產檢
+  | 'bag'       // 待產包
+  | 'shopping'  // 用品採購
+  | 'postpartum' // 坐月子
+  | 'finance'   // 財務
+  | 'naming'    // 命名登記
+  | 'subsidy'   // 補助
+  | 'childcare'; // 公幼申請
+
+export type PregnancyStage = 'early' | 'mid' | 'late' | 'postpartum_stage';
 
 export interface ChecklistItem {
   id: string;
   category: ChecklistCategory;
+  stage: PregnancyStage;
   title: string;
   done: boolean;
   xp: number;
@@ -24,20 +35,45 @@ export interface ChecklistItem {
 }
 
 const DEFAULT_CHECKLIST: ChecklistItem[] = [
-  { id: 'c1', category: 'checkup', title: '初診（確認懷孕）', done: false, xp: 30, week: 6 },
-  { id: 'c2', category: 'checkup', title: '8-12週 第一孕期超音波', done: false, xp: 20, week: 8 },
-  { id: 'c3', category: 'checkup', title: '11-13週 唐氏症篩檢', done: false, xp: 20, week: 11 },
-  { id: 'c4', category: 'checkup', title: '20週 大排畸超音波', done: false, xp: 25, week: 20 },
-  { id: 'c5', category: 'checkup', title: '24-28週 妊娠糖尿病篩查', done: false, xp: 20, week: 24 },
-  { id: 'c6', category: 'checkup', title: '35-37週 乙型鏈球菌篩查', done: false, xp: 20, week: 35 },
-  { id: 'b1', category: 'bag', title: '孕婦手冊、健保卡、身分證', done: false, xp: 10 },
-  { id: 'b2', category: 'bag', title: '換洗衣物（3套）', done: false, xp: 10 },
-  { id: 'b3', category: 'bag', title: '產褥墊', done: false, xp: 5 },
-  { id: 'b4', category: 'bag', title: '母乳墊', done: false, xp: 5 },
-  { id: 'b5', category: 'bag', title: '寶寶衣物（新生兒 2-3套）', done: false, xp: 10 },
-  { id: 'b6', category: 'bag', title: '包巾 2條', done: false, xp: 5 },
-  { id: 'b7', category: 'bag', title: '濕紙巾', done: false, xp: 5 },
-  { id: 'b8', category: 'bag', title: '充電器', done: false, xp: 5 },
+  // 孕早期（0-12週）
+  { id: 'c1', category: 'checkup', stage: 'early', title: '初診（確認懷孕）', done: false, xp: 30, week: 6 },
+  { id: 's1', category: 'subsidy', stage: 'early', title: '領媽媽手冊＋免費孕婦用品/店家資源', done: false, xp: 15, week: 8 },
+  { id: 'c2', category: 'checkup', stage: 'early', title: '8-12週 第一孕期超音波', done: false, xp: 20, week: 8 },
+  { id: 'f1', category: 'finance', stage: 'early', title: '告知公司懷孕、了解產檢假規定', done: false, xp: 10, week: 10 },
+  { id: 's2', category: 'subsidy', stage: 'early', title: '了解生育補助/育兒津貼申請資格', done: false, xp: 10, week: 10 },
+  { id: 'c3', category: 'checkup', stage: 'early', title: '11-13週 唐氏症篩檢', done: false, xp: 20, week: 11 },
+
+  // 孕中期（13-27週）
+  { id: 'c4', category: 'checkup', stage: 'mid', title: '20週 大排畸超音波', done: false, xp: 25, week: 20 },
+  { id: 'n1', category: 'naming', stage: 'mid', title: '開始討論寶寶名字', done: false, xp: 10, week: 16 },
+  { id: 'p1', category: 'postpartum', stage: 'mid', title: '比較坐月子方式（月子中心 vs 月嫂）', done: false, xp: 15, week: 18 },
+  { id: 'p2', category: 'postpartum', stage: 'mid', title: '熱門月子中心先卡位預約', done: false, xp: 20, week: 20 },
+  { id: 'c5', category: 'checkup', stage: 'mid', title: '24-28週 妊娠糖尿病篩查', done: false, xp: 20, week: 24 },
+  { id: 'f2', category: 'finance', stage: 'mid', title: '規劃寶寶保單', done: false, xp: 15, week: 22 },
+  { id: 'sh1', category: 'shopping', stage: 'mid', title: '採購大件用品（嬰兒床、汽座、推車）', done: false, xp: 20, week: 24 },
+  { id: 'cc1', category: 'childcare', stage: 'mid', title: '了解公幼/托育申請時程', done: false, xp: 10, week: 26 },
+
+  // 孕晚期（28-40週）
+  { id: 'c6', category: 'checkup', stage: 'late', title: '35-37週 乙型鏈球菌篩查', done: false, xp: 20, week: 35 },
+  { id: 'b1', category: 'bag', stage: 'late', title: '孕婦手冊、健保卡、身分證', done: false, xp: 10 },
+  { id: 'b2', category: 'bag', stage: 'late', title: '換洗衣物（3套）', done: false, xp: 10 },
+  { id: 'b3', category: 'bag', stage: 'late', title: '產褥墊', done: false, xp: 5 },
+  { id: 'b4', category: 'bag', stage: 'late', title: '母乳墊', done: false, xp: 5 },
+  { id: 'b5', category: 'bag', stage: 'late', title: '寶寶衣物（新生兒 2-3套）', done: false, xp: 10 },
+  { id: 'b6', category: 'bag', stage: 'late', title: '包巾 2條', done: false, xp: 5 },
+  { id: 'b7', category: 'bag', stage: 'late', title: '濕紙巾', done: false, xp: 5 },
+  { id: 'b8', category: 'bag', stage: 'late', title: '充電器', done: false, xp: 5 },
+  { id: 'c7', category: 'checkup', stage: 'late', title: '確認生產醫院/生產計畫', done: false, xp: 15, week: 32 },
+  { id: 'f3', category: 'finance', stage: 'late', title: '申請育嬰留職停薪', done: false, xp: 15, week: 34 },
+  { id: 'p3', category: 'postpartum', stage: 'late', title: '確認月子中心/月嫂最終安排', done: false, xp: 10, week: 34 },
+  { id: 'n2', category: 'naming', stage: 'late', title: '準備新生兒出生登記文件', done: false, xp: 10, week: 36 },
+  { id: 'sh2', category: 'shopping', stage: 'late', title: '採購消毒鍋、奶瓶等哺乳用品', done: false, xp: 15, week: 36 },
+
+  // 產後
+  { id: 'n3', category: 'naming', stage: 'postpartum_stage', title: '辦理出生登記（7天內）', done: false, xp: 20 },
+  { id: 's3', category: 'subsidy', stage: 'postpartum_stage', title: '申請生育給付/育兒津貼', done: false, xp: 20 },
+  { id: 'c8', category: 'checkup', stage: 'postpartum_stage', title: '新生兒疫苗接種時程', done: false, xp: 10 },
+  { id: 'cc2', category: 'childcare', stage: 'postpartum_stage', title: '公幼/托育正式報名', done: false, xp: 10 },
 ];
 
 /** 一條「已經開始過」的人生大事線的完整快照，用來在切換時暫存 */
@@ -201,10 +237,11 @@ export const usePregnancyStore = create<PregnancyState>()(
         const nextChecklist = checklist.map((i) => (i.id === id ? { ...i, done: true } : i));
         set({ checklist: nextChecklist });
         get().addXP(item.xp);
-        const category = item.category;
-        const categoryItems = nextChecklist.filter((i) => i.category === category);
-        if (categoryItems.every((i) => i.done) && !badges.includes('checklist_pro')) {
-          get().unlockBadge('checklist_pro');
+        const stage = item.stage;
+        const stageItems = nextChecklist.filter((i) => i.stage === stage);
+        const badgeId = `stage_${stage}_done`;
+        if (stageItems.every((i) => i.done) && !badges.includes(badgeId)) {
+          get().unlockBadge(badgeId);
         }
       },
       checkIn: () => {
@@ -302,9 +339,27 @@ export const usePregnancyStore = create<PregnancyState>()(
     {
       name: 'lifemoments-pregnancy-store',
       storage: createJSONStorage(() => AsyncStorage),
+      version: 2,
       partialize: (state) => {
         const { justLeveledUp, ...persisted } = state;
         return persisted;
+      },
+      migrate: (persistedState) => {
+        const state = persistedState as PregnancyState;
+        const migrateChecklist = (checklist: ChecklistItem[] | undefined) => {
+          const doneMap = new Map((checklist ?? []).map((i) => [i.id, i.done]));
+          return DEFAULT_CHECKLIST.map((item) => ({ ...item, done: doneMap.get(item.id) ?? false }));
+        };
+        if (state?.checklist) {
+          state.checklist = migrateChecklist(state.checklist);
+        }
+        if (state?.instances) {
+          state.instances = state.instances.map((inst) => ({
+            ...inst,
+            checklist: migrateChecklist(inst.checklist),
+          }));
+        }
+        return state;
       },
       onRehydrateStorage: () => (state) => {
         if (state?.profile) {

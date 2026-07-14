@@ -1,5 +1,6 @@
-import { ParentRole, ChecklistItem, ChecklistCategory } from '../store/usePregnancyStore';
+import { ParentRole, ChecklistItem, ChecklistCategory, PregnancyStage } from '../store/usePregnancyStore';
 import { getItemStatus, ItemStatus } from './checklistStatus';
+import { CATEGORY_META } from './checklistMeta';
 
 export interface TodayQuest {
   id: string;
@@ -9,6 +10,7 @@ export interface TodayQuest {
   optional?: boolean; // 額外任務，可交給另一半
   status?: ItemStatus;
   category: ChecklistCategory;
+  stage: PregnancyStage;
 }
 
 const STATUS_PRIORITY: Record<Exclude<ItemStatus, null>, number> = {
@@ -17,9 +19,10 @@ const STATUS_PRIORITY: Record<Exclude<ItemStatus, null>, number> = {
   future: 2,
 };
 
-function pickCheckupQuests(checklist: ChecklistItem[], currentWeek: number, limit: number) {
+/** 挑出有明確週數、依「已過期→即將到來→未來」排序的前幾筆待辦（跨所有類別，不只產檢） */
+function pickUrgentQuests(checklist: ChecklistItem[], currentWeek: number, limit: number) {
   return checklist
-    .filter((i) => i.category === 'checkup' && !i.done)
+    .filter((i) => i.week !== undefined && !i.done)
     .map((i) => ({ item: i, status: getItemStatus(i, currentWeek) }))
     .sort((a, b) => {
       const pa = a.status ? STATUS_PRIORITY[a.status] : 3;
@@ -35,26 +38,29 @@ export function getTodayQuests(
   checklist: ChecklistItem[],
   currentWeek: number
 ): TodayQuest[] {
-  const checkupPicks = pickCheckupQuests(checklist, currentWeek, 2);
+  const urgentPicks = pickUrgentQuests(checklist, currentWeek, 2);
   const bagRemaining = checklist.some((i) => i.category === 'bag' && !i.done);
 
-  const quests: TodayQuest[] = checkupPicks.map(({ item, status }) => ({
+  const quests: TodayQuest[] = urgentPicks.map(({ item, status }) => ({
     id: item.id,
-    emoji: '📅',
-    title: role === 'dad' ? `提醒／陪同：${item.title}` : item.title,
+    emoji: CATEGORY_META[item.category].emoji,
+    title: role === 'dad' && item.category === 'checkup' ? `提醒／陪同：${item.title}` : item.title,
     xp: item.xp,
     status,
-    category: 'checkup',
+    category: item.category,
+    stage: item.stage,
   }));
 
   if (bagRemaining) {
+    const bagItem = checklist.find((i) => i.category === 'bag');
     quests.push({
       id: 'bag',
-      emoji: '📦',
+      emoji: CATEGORY_META.bag.emoji,
       title: role === 'dad' ? '準備待產包' : '更新待產包清單',
       xp: role === 'dad' ? 20 : 15,
       optional: role !== 'dad',
       category: 'bag',
+      stage: bagItem?.stage ?? 'late',
     });
   }
 

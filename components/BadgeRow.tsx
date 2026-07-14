@@ -8,6 +8,10 @@ const BADGE_MAP: Record<string, { emoji: string; label: string }> = {
   checklist_pro: { emoji: '📋', label: '清單達人' },
   budget_master: { emoji: '💰', label: '精打細算' },
   subsidy_hunter: { emoji: '🎯', label: '補助獵人' },
+  stage_early_done: { emoji: '🌸', label: '孕早期達成' },
+  stage_mid_done: { emoji: '🌻', label: '孕中期達成' },
+  stage_late_done: { emoji: '🎉', label: '孕晚期達成' },
+  stage_postpartum_stage_done: { emoji: '👶', label: '產後任務達成' },
 };
 
 interface BadgeRowProps {

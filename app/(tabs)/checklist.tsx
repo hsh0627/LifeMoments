@@ -2,23 +2,24 @@ import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { usePregnancyStore, ChecklistCategory } from '../../store/usePregnancyStore';
+import { usePregnancyStore, PregnancyStage } from '../../store/usePregnancyStore';
 import { getItemStatus, STATUS_STYLE } from '../../lib/checklistStatus';
+import { CATEGORY_META, STAGE_META, STAGE_ORDER } from '../../lib/checklistMeta';
 import PixelText from '../../components/PixelText';
-
-type TabKey = ChecklistCategory;
 
 export default function Checklist() {
   const { checklist, completeChecklistItem, currentWeek } = usePregnancyStore();
   const insets = useSafeAreaInsets();
-  const { tab } = useLocalSearchParams<{ tab?: string }>();
-  const [activeTab, setActiveTab] = useState<TabKey>('checkup');
+  const { stage: stageParam } = useLocalSearchParams<{ stage?: string }>();
+  const [activeStage, setActiveStage] = useState<PregnancyStage>('early');
 
   useEffect(() => {
-    if (tab === 'checkup' || tab === 'bag') setActiveTab(tab);
-  }, [tab]);
+    if (STAGE_ORDER.includes(stageParam as PregnancyStage)) {
+      setActiveStage(stageParam as PregnancyStage);
+    }
+  }, [stageParam]);
 
-  const list = checklist.filter((i) => i.category === activeTab);
+  const list = checklist.filter((i) => i.stage === activeStage);
   const doneCount = list.filter((i) => i.done).length;
 
   return (
@@ -28,15 +29,15 @@ export default function Checklist() {
         <PixelText size="xs" color="#9C8570" style={{ marginTop: 4 }}>完成任務獲得 XP！</PixelText>
       </View>
 
-      {/* Tabs */}
+      {/* 孕期階段 Tabs */}
       <View style={{ flexDirection: 'row', marginHorizontal: 24, backgroundColor: '#D9C9B0', borderRadius: 8, padding: 4, marginBottom: 16 }}>
-        {([['checkup', '產檢行程'], ['bag', '待產包']] as [TabKey, string][]).map(([key, label]) => (
+        {STAGE_ORDER.map((stage) => (
           <TouchableOpacity
-            key={key}
-            style={{ flex: 1, paddingVertical: 10, borderRadius: 6, alignItems: 'center', backgroundColor: activeTab === key ? '#FDF6E3' : 'transparent' }}
-            onPress={() => setActiveTab(key)}
+            key={stage}
+            style={{ flex: 1, paddingVertical: 10, borderRadius: 6, alignItems: 'center', backgroundColor: activeStage === stage ? '#FDF6E3' : 'transparent' }}
+            onPress={() => setActiveStage(stage)}
           >
-            <PixelText size="xs" color={activeTab === key ? '#7C5C3E' : '#9C8570'}>{label}</PixelText>
+            <PixelText size="xs" color={activeStage === stage ? '#7C5C3E' : '#9C8570'}>{STAGE_META[stage].shortLabel}</PixelText>
           </TouchableOpacity>
         ))}
       </View>
@@ -44,7 +45,7 @@ export default function Checklist() {
       {/* 進度 */}
       <View style={{ marginHorizontal: 24, marginBottom: 16 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-          <PixelText size="xs" color="#9C8570">進度</PixelText>
+          <PixelText size="xs" color="#9C8570">{STAGE_META[activeStage].label} 進度</PixelText>
           <PixelText size="xs" color="#7C5C3E">{doneCount} / {list.length}</PixelText>
         </View>
         <View style={{ backgroundColor: '#D9C9B0', borderRadius: 4, height: 8 }}>
@@ -55,6 +56,7 @@ export default function Checklist() {
       <ScrollView style={{ paddingHorizontal: 24 }} contentContainerStyle={{ paddingBottom: 32, gap: 12 }}>
         {list.map((item) => {
           const status = getItemStatus(item, currentWeek);
+          const category = CATEGORY_META[item.category];
           return (
           <TouchableOpacity
             key={item.id}
@@ -67,11 +69,16 @@ export default function Checklist() {
               </View>
               <View style={{ flex: 1 }}>
                 <PixelText size="xs" color="#3B2A1A" style={{ textDecorationLine: item.done ? 'line-through' : 'none' }}>{item.title}</PixelText>
-                {status && (
-                  <View style={{ alignSelf: 'flex-start', backgroundColor: STATUS_STYLE[status].bg, borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2, marginTop: 4 }}>
-                    <PixelText size="xs" color={STATUS_STYLE[status].color}>{STATUS_STYLE[status].label}</PixelText>
+                <View style={{ flexDirection: 'row', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                  <View style={{ alignSelf: 'flex-start', backgroundColor: '#EDE4D0', borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2 }}>
+                    <PixelText size="xs" color="#7C5C3E">{category.emoji} {category.label}</PixelText>
                   </View>
-                )}
+                  {status && (
+                    <View style={{ alignSelf: 'flex-start', backgroundColor: STATUS_STYLE[status].bg, borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2 }}>
+                      <PixelText size="xs" color={STATUS_STYLE[status].color}>{STATUS_STYLE[status].label}</PixelText>
+                    </View>
+                  )}
+                </View>
               </View>
             </View>
             {!item.done && (

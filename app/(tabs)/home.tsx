@@ -100,7 +100,7 @@ export default function Home() {
                 xpReward={q.xp}
                 optional={q.optional}
                 status={q.status}
-                onPress={() => router.push({ pathname: '/(tabs)/checklist', params: { tab: q.category } })}
+                onPress={() => router.push({ pathname: '/(tabs)/checklist', params: { stage: q.stage } })}
               />
             ))
           ) : (
