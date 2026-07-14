@@ -1,15 +1,19 @@
 import { View, Text, ScrollView, TouchableOpacity, Alert, TextInput, Modal } from 'react-native';
 import { useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import { usePregnancyStore } from '../../store/usePregnancyStore';
+import { getLevelTier } from '../../lib/levels';
 import BadgeRow from '../../components/BadgeRow';
 import XPBar from '../../components/XPBar';
 import PixelText from '../../components/PixelText';
 
 export default function Profile() {
   const { user } = useAuthStore();
-  const { xp, level, badges } = usePregnancyStore();
+  const { role, setRole, xp, level, badges } = usePregnancyStore();
+  const insets = useSafeAreaInsets();
+  const tier = getLevelTier(level, role);
   const [upgradeModal, setUpgradeModal] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -56,7 +60,7 @@ export default function Profile() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: '#F5EDD8' }} contentContainerStyle={{ paddingBottom: 32 }}>
-      <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8 }}>
+      <View style={{ paddingHorizontal: 24, paddingTop: insets.top + 16, paddingBottom: 8 }}>
         <PixelText size="sm" outlined color="#FFFFFF">👤 我的角色</PixelText>
       </View>
 
@@ -75,12 +79,12 @@ export default function Profile() {
       )}
 
       {/* 角色卡 */}
-      <View style={{ marginHorizontal: 24, backgroundColor: '#7C5C3E', borderRadius: 16, padding: 24, alignItems: 'center', marginBottom: 24 }}>
+      <View style={{ marginHorizontal: 24, backgroundColor: tier.themeColor, borderRadius: 16, padding: 24, alignItems: 'center', marginBottom: 24 }}>
         <View style={{ width: 80, height: 80, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
           <Text style={{ fontSize: 40 }}>{isAnonymous ? '👻' : '🌟'}</Text>
         </View>
         <PixelText size="sm" outlined color="#FFFFFF" style={{ marginBottom: 4 }}>{displayName}</PixelText>
-        <PixelText size="xs" color="#D9C9B0" style={{ marginBottom: 16 }}>Lv.{level} 媽媽冒險者</PixelText>
+        <PixelText size="xs" color="#D9C9B0" style={{ marginBottom: 16 }}>Lv.{level} {tier.title}</PixelText>
         <View style={{ width: '100%' }}>
           <XPBar xp={xp} />
         </View>
@@ -111,6 +115,19 @@ export default function Profile() {
               <PixelText size="xs" color="#C4885A">升級為正式帳號</PixelText>
             </TouchableOpacity>
           )}
+          <TouchableOpacity
+            style={{ paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#D9C9B0', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+            onPress={() =>
+              Alert.alert('切換角色', '選擇你的角色', [
+                { text: '取消', style: 'cancel' },
+                { text: '🤰 我是媽麻', onPress: () => setRole('mom') },
+                { text: '👨 我是爸拔', onPress: () => setRole('dad') },
+              ])
+            }
+          >
+            <PixelText size="xs" color="#3B2A1A">切換角色</PixelText>
+            <PixelText size="xs" color="#9C8570">{role === 'dad' ? '👨 爸拔' : '🤰 媽麻'}</PixelText>
+          </TouchableOpacity>
           <TouchableOpacity style={{ paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#D9C9B0' }}>
             <PixelText size="xs" color="#3B2A1A">隱私權政策</PixelText>
           </TouchableOpacity>

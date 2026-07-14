@@ -17,18 +17,18 @@ interface BadgeRowProps {
 export default function BadgeRow({ badges }: BadgeRowProps) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-      <View className="flex-row gap-3">
+      <View style={{ flexDirection: 'row', gap: 12 }}>
         {badges.map((badge) => {
           const info = BADGE_MAP[badge];
           if (!info) return null;
           return (
-            <View key={badge} className="items-center gap-1">
-              <View className="bg-card rounded-2xl w-14 h-14 items-center justify-center"
-                style={{ shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 }}
+            <View key={badge} style={{ alignItems: 'center', gap: 4 }}>
+              <View
+                style={{ backgroundColor: '#FDF6E3', borderRadius: 16, width: 56, height: 56, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 }}
               >
-                <Text className="text-2xl">{info.emoji}</Text>
+                <Text style={{ fontSize: 24 }}>{info.emoji}</Text>
               </View>
-              <Text className="text-xs text-muted text-center">{info.label}</Text>
+              <Text style={{ fontSize: 12, color: '#9C8570', textAlign: 'center' }}>{info.label}</Text>
             </View>
           );
         })}

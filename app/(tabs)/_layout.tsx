@@ -1,30 +1,65 @@
-import { Tabs } from 'expo-router';
-import { Text } from 'react-native';
+import { Tabs, Redirect } from 'expo-router';
+import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import LevelUpModal from '../../components/LevelUpModal';
+import RoleSelectScreen from '../../components/RoleSelectScreen';
+import StorylineSelectScreen from '../../components/StorylineSelectScreen';
+import { usePregnancyStore } from '../../store/usePregnancyStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { LIFEMOMENT_CONFIG } from '../../lib/lifemoments';
 
 function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focused: boolean }) {
   return (
-    <Text className={`text-center ${focused ? 'opacity-100' : 'opacity-40'}`}>
-      {emoji}{'\n'}
-      <Text className={`text-xs ${focused ? 'text-primary font-bold' : 'text-muted'}`}>
+    <View style={{ alignItems: 'center', opacity: focused ? 1 : 0.4 }}>
+      <Text style={{ fontSize: 20 }}>{emoji}</Text>
+      <Text
+        style={{
+          fontSize: 11,
+          marginTop: 2,
+          color: focused ? '#7C5C3E' : '#9C8570',
+          fontWeight: focused ? '700' : '400',
+        }}
+      >
         {label}
       </Text>
-    </Text>
+    </View>
   );
 }
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const storyline = usePregnancyStore((s) => s.storyline);
+  const role = usePregnancyStore((s) => s.role);
+  const session = useAuthStore((s) => s.session);
+
+  if (!session) {
+    return <Redirect href="/(auth)/welcome" />;
+  }
+
+  if (!storyline) {
+    return <StorylineSelectScreen />;
+  }
+
+  const needsRole = LIFEMOMENT_CONFIG[storyline].needsRole;
+  if (needsRole && !role) {
+    return <RoleSelectScreen />;
+  }
+
   return (
+    <>
+    <LevelUpModal />
     <Tabs
       screenOptions={{
         headerShown: false,
-        contentStyle: { paddingTop: insets.top },
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopColor: '#F0F0F0',
+          paddingTop: 8,
           paddingBottom: insets.bottom || 8,
-          height: 70 + (insets.bottom || 0),
+          height: 56 + (insets.bottom || 0),
+        },
+        tabBarItemStyle: {
+          justifyContent: 'center',
         },
       }}
     >
@@ -61,5 +96,6 @@ export default function TabsLayout() {
         }}
       />
     </Tabs>
+    </>
   );
 }

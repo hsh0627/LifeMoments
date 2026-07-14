@@ -1,4 +1,4 @@
-import { Text, View, TextProps, StyleProp, TextStyle } from 'react-native';
+import { Text, TextProps, StyleProp, TextStyle } from 'react-native';
 
 interface PixelTextProps extends TextProps {
   size?: 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl';
@@ -15,12 +15,6 @@ const sizeMap = {
   xl: 44,
   '2xl': 56,
 };
-
-const STROKE = 2;
-const OFFSETS = [
-  [-STROKE, 0], [STROKE, 0], [0, -STROKE], [0, STROKE],
-  [-STROKE, -STROKE], [STROKE, -STROKE], [-STROKE, STROKE], [STROKE, STROKE],
-];
 
 export default function PixelText({
   size = 'base',
@@ -45,20 +39,20 @@ export default function PixelText({
   }
 
   return (
-    <View style={{ alignSelf: 'center' }}>
-      {OFFSETS.map(([x, y], i) => (
-        <Text
-          key={i}
-          style={[baseStyle, { color: '#1A0F00', position: 'absolute', left: x, top: y }, style]}
-          {...props}
-        >
-          {children}
-        </Text>
-      ))}
-      {/* 最後這層撐起 View 的大小，並顯示白字 */}
-      <Text style={[baseStyle, { color }, style]} {...props}>
-        {children}
-      </Text>
-    </View>
+    <Text
+      style={[
+        baseStyle,
+        {
+          color,
+          textShadowColor: '#1A0F00',
+          textShadowOffset: { width: 1, height: 1 },
+          textShadowRadius: 1,
+        },
+        style,
+      ]}
+      {...props}
+    >
+      {children}
+    </Text>
   );
 }

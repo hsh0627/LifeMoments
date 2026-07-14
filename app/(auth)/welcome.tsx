@@ -1,9 +1,10 @@
 import { View, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, Redirect } from 'expo-router';
 import { useState } from 'react';
 import PixelText from '../../components/PixelText';
 import { supabase } from '../../lib/supabase';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const slides = [
   {
@@ -21,15 +22,26 @@ const slides = [
 ];
 
 export default function Welcome() {
+  const session = useAuthStore((s) => s.session);
   const [page, setPage] = useState(0);
   const [guestLoading, setGuestLoading] = useState(false);
   const isLast = page === slides.length - 1;
 
+  if (session) {
+    return <Redirect href="/(tabs)/home" />;
+  }
+
   const handleGuestLogin = async () => {
     setGuestLoading(true);
-    const { error } = await supabase.auth.signInAnonymously();
-    setGuestLoading(false);
-    if (error) Alert.alert('錯誤', error.message);
+    try {
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) Alert.alert('錯誤', error.message);
+    } catch (e) {
+      console.log('signInAnonymously exception:', e);
+      Alert.alert('錯誤', e instanceof Error ? e.message : String(e));
+    } finally {
+      setGuestLoading(false);
+    }
   };
 
   return (

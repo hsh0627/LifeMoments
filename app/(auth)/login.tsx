@@ -1,10 +1,11 @@
 import { View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, Redirect } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { supabase } from '../../lib/supabase';
+import { useAuthStore } from '../../store/useAuthStore';
 import PixelText from '../../components/PixelText';
 
 const schema = z.object({
@@ -15,9 +16,14 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function Login() {
+  const session = useAuthStore((s) => s.session);
   const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
+
+  if (session) {
+    return <Redirect href="/(tabs)/home" />;
+  }
 
   const onSubmit = async (data: FormData) => {
     const { error } = await supabase.auth.signInWithPassword({

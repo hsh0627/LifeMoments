@@ -2,32 +2,21 @@
 
 人生大事紀錄與工具 APP — 幫助你在每個重要人生階段，知道該做什麼、能拿什麼資源、如何一步步完成。
 
-## 功能規劃
+首發模組是「懷孕」，其他人生大事線（結婚、買房、買車...）已在規劃中。
 
-* 人生大事模組（懷孕、結婚、買房、買車、創業...）
-* 預設計畫清單 + 進度追蹤
-* 備註與紀錄
-* AI 助理（問答、流程引導、功能導引）
-* 政府與民間補助資料庫（即時更新）
-
-## 首發模組：懷孕
-
-* 週數計算器
-* 產檢行程清單
-* 待產包清單
-* 預算追蹤
-* 產檢紀錄
-* 台灣生育補助查詢
-* 各種免費媽媽教室資訊
-* 月子中心\&產後護理之家
+詳細架構、資料模型、產品規劃與目前進度請看 **[ARCHITECTURE.md](./ARCHITECTURE.md)**。
 
 ## 技術棧
 
-* **前端**：React Native + Expo
-* **後端**：Supabase
-* **AI**：Claude API
+- 前端：React Native + Expo + expo-router + TypeScript
+- 狀態管理：Zustand（含本機持久化）
+- 後端：Supabase（目前僅 Auth）
 
-## 開發狀態
+## 開發
 
-🚧 規劃中
+```bash
+npm install
+npx expo start
+```
 
+需要 `.env`（參考 `.env.example`）設定 `EXPO_PUBLIC_SUPABASE_URL`、`EXPO_PUBLIC_SUPABASE_ANON_KEY`。

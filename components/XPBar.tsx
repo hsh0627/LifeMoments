@@ -11,14 +11,13 @@ export default function XPBar({ xp, xpPerLevel = 100 }: XPBarProps) {
 
   return (
     <View>
-      <View className="flex-row justify-between mb-1">
-        <Text className="text-white text-xs opacity-80">經驗值</Text>
-        <Text className="text-white text-xs opacity-80">{currentLevelXP} / {xpPerLevel} XP</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+        <Text style={{ color: '#FFFFFF', fontSize: 12, opacity: 0.8 }}>經驗值</Text>
+        <Text style={{ color: '#FFFFFF', fontSize: 12, opacity: 0.8 }}>{currentLevelXP} / {xpPerLevel} XP</Text>
       </View>
-      <View className="bg-white/30 rounded-full h-2">
+      <View style={{ backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 99, height: 8 }}>
         <View
-          className="bg-xp rounded-full h-2"
-          style={{ width: `${Math.round(progress * 100)}%` }}
+          style={{ backgroundColor: '#FFD700', borderRadius: 99, height: 8, width: `${Math.round(progress * 100)}%` }}
         />
       </View>
     </View>
