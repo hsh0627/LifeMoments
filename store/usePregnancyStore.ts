@@ -32,6 +32,7 @@ export interface ChecklistItem {
   done: boolean;
   xp: number;
   week?: number;
+  completedAt?: number;
 }
 
 const DEFAULT_CHECKLIST: ChecklistItem[] = [
@@ -92,12 +93,14 @@ export interface LifeMomentInstance {
   streak: number;
   freezeCards: number;
   lastFreezeGrantWeek: string | null;
+  createdAt: number;
 }
 
 interface PregnancyState {
   // 背包：目前沒有在看、但之前已經開始過的人生大事線
   instances: LifeMomentInstance[];
   activeInstanceId: string | null;
+  activeCreatedAt: number | null;
 
   // 目前使用中那一條線的資料（跟舊版欄位保持一致，畫面元件不用大改）
   storyline: Storyline | null;
@@ -128,6 +131,8 @@ interface PregnancyState {
   startNewLifeMoment: (storyline: Storyline) => void;
   /** 切回背包裡某一條線；目前這條會先存進背包 */
   switchToInstance: (id: string) => void;
+  /** 從背包永久刪除某一條線（不會刪雲端資料，只是本機不再顯示） */
+  removeInstance: (id: string) => void;
   /** 把目前這條線收進背包，回到「選人生大事」畫面（角色選擇畫面用的返回也是這個） */
   archiveActiveAndGoToPicker: () => void;
   /** 選人生大事線但還沒選角色就按返回：因為這條線根本還沒真的開始，直接丟棄，不進背包 */
@@ -188,6 +193,7 @@ function uuidv4(): string {
 function blankActiveFields() {
   return {
     activeInstanceId: null as string | null,
+    activeCreatedAt: null as number | null,
     storyline: null as Storyline | null,
     role: null as ParentRole | null,
     cloudInstanceId: null as string | null,
@@ -212,7 +218,7 @@ export const usePregnancyStore = create<PregnancyState>()(
       justLeveledUp: false,
 
       setStoryline: (storyline) => {
-        set({ storyline, activeInstanceId: uuidv4() });
+        set({ storyline, activeInstanceId: uuidv4(), activeCreatedAt: Date.now() });
       },
       setRole: (role) => set({ role }),
       setProfile: (profile) =>
@@ -234,7 +240,7 @@ export const usePregnancyStore = create<PregnancyState>()(
         const { checklist, badges } = get();
         const item = checklist.find((i) => i.id === id);
         if (!item || item.done) return;
-        const nextChecklist = checklist.map((i) => (i.id === id ? { ...i, done: true } : i));
+        const nextChecklist = checklist.map((i) => (i.id === id ? { ...i, done: true, completedAt: Date.now() } : i));
         set({ checklist: nextChecklist });
         get().addXP(item.xp);
         const stage = item.stage;
@@ -301,6 +307,7 @@ export const usePregnancyStore = create<PregnancyState>()(
           ...blankActiveFields(),
           storyline,
           activeInstanceId: uuidv4(),
+          activeCreatedAt: Date.now(),
         });
       },
       switchToInstance: (id) => {
@@ -311,6 +318,7 @@ export const usePregnancyStore = create<PregnancyState>()(
         set({
           instances: instances.filter((i) => i.id !== id),
           activeInstanceId: target.id,
+          activeCreatedAt: target.createdAt,
           storyline: target.storyline,
           role: target.role,
           cloudInstanceId: target.cloudInstanceId,
@@ -326,10 +334,15 @@ export const usePregnancyStore = create<PregnancyState>()(
           lastFreezeGrantWeek: target.lastFreezeGrantWeek,
         });
       },
+      removeInstance: (id) => {
+        const { instances } = get();
+        set({ instances: instances.filter((i) => i.id !== id) });
+      },
       archiveActiveAndGoToPicker: () => {
         const state = get();
         const instances = archiveActive(state);
-        set({ instances, ...blankActiveFields() });
+        const previousRole = state.role;
+        set({ instances, ...blankActiveFields(), role: previousRole });
       },
       cancelOnboarding: () => {
         // 選了人生大事、還沒選完角色就按返回：這條線根本沒有真的資料，直接丟棄不進背包
@@ -339,7 +352,7 @@ export const usePregnancyStore = create<PregnancyState>()(
     {
       name: 'lifemoments-pregnancy-store',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 2,
+      version: 4,
       partialize: (state) => {
         const { justLeveledUp, ...persisted } = state;
         return persisted;
@@ -347,8 +360,11 @@ export const usePregnancyStore = create<PregnancyState>()(
       migrate: (persistedState) => {
         const state = persistedState as PregnancyState;
         const migrateChecklist = (checklist: ChecklistItem[] | undefined) => {
-          const doneMap = new Map((checklist ?? []).map((i) => [i.id, i.done]));
-          return DEFAULT_CHECKLIST.map((item) => ({ ...item, done: doneMap.get(item.id) ?? false }));
+          const doneMap = new Map((checklist ?? []).map((i) => [i.id, { done: i.done, completedAt: i.completedAt }]));
+          return DEFAULT_CHECKLIST.map((item) => {
+            const prev = doneMap.get(item.id);
+            return { ...item, done: prev?.done ?? false, completedAt: prev?.completedAt };
+          });
         };
         if (state?.checklist) {
           state.checklist = migrateChecklist(state.checklist);
@@ -356,8 +372,12 @@ export const usePregnancyStore = create<PregnancyState>()(
         if (state?.instances) {
           state.instances = state.instances.map((inst) => ({
             ...inst,
+            createdAt: inst.createdAt ?? Date.now(),
             checklist: migrateChecklist(inst.checklist),
           }));
+        }
+        if (state?.activeInstanceId && !state.activeCreatedAt) {
+          state.activeCreatedAt = Date.now();
         }
         return state;
       },
@@ -374,6 +394,7 @@ function archiveActive(state: PregnancyState): LifeMomentInstance[] {
   if (!state.activeInstanceId || !state.storyline) return state.instances;
   const snapshot: LifeMomentInstance = {
     id: state.activeInstanceId,
+    createdAt: state.activeCreatedAt ?? Date.now(),
     storyline: state.storyline,
     role: state.role,
     cloudInstanceId: state.cloudInstanceId,

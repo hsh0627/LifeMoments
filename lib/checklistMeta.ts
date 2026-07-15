@@ -19,3 +19,14 @@ export const STAGE_META: Record<PregnancyStage, { label: string; shortLabel: str
 };
 
 export const STAGE_ORDER: PregnancyStage[] = ['early', 'mid', 'late', 'postpartum_stage'];
+
+export const BAG_ITEM_EMOJI: Record<string, string> = {
+  b1: '🪪',
+  b2: '👕',
+  b3: '🩹',
+  b4: '🤱',
+  b5: '👶',
+  b6: '🧣',
+  b7: '🧻',
+  b8: '🔌',
+};

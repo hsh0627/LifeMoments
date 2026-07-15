@@ -15,7 +15,7 @@ export default function TitleScreen({ onContinue }: { onContinue: () => void }) 
   const tier = getLevelTier(level, role);
 
   const handleSwitchStoryline = () => {
-    Alert.alert('切換人生大事', '要回到人生大事選擇畫面嗎？（角色也會重選）', [
+    Alert.alert('切換人生大事', '要回到人生大事選擇畫面嗎？', [
       { text: '取消', style: 'cancel' },
       {
         text: '切換',

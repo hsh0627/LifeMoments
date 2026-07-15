@@ -17,9 +17,9 @@ export async function bootstrapCloudSync(userId: string) {
     if (!cloudInstanceId) {
       const { data: membership } = await supabase
         .from('lifemoment_members')
-        .select('instance_id, role, lifemoment_instances!inner(lifemoment_type)')
+        .select('instance_id, role')
         .eq('user_id', userId)
-        .eq('lifemoment_instances.lifemoment_type', storyline)
+        .eq('instance_id', activeInstanceId)
         .maybeSingle();
 
       if (membership) {
